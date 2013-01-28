@@ -16,6 +16,11 @@
       <classifier>classes</classifier>
     </dependency>
     <dependency>
+      <groupId>org.overlord.sramp</groupId>
+      <artifactId>s-ramp-repository-jcr</artifactId>
+      <version>${org.overlord.sramp.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.jboss.resteasy</groupId>
       <artifactId>tjws</artifactId>
       <version>${org.jboss.resteasy.version}</version>
@@ -41,6 +46,23 @@
           <target>1.6</target>
           <showDeprecation>false</showDeprecation>
           <showWarnings>false</showWarnings>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>1.2.1</version>
+        <executions>
+          <execution>
+            <id>demo</id>
+            <phase>test</phase>
+            <goals>
+              <goal>java</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <mainClass>org.overlord.sramp.devsvr.SrampDevServer</mainClass>
         </configuration>
       </plugin>
     </plugins>
