@@ -1,24 +1,47 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.overlord.sramp</groupId>
+  <parent>
+    <groupId>org.overlord.sramp</groupId>
+    <artifactId>s-ramp</artifactId>
+    <version>0.0.3-SNAPSHOT</version>
+  </parent>
+
   <artifactId>s-ramp-dev-server</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <properties>
-    <org.jboss.resteasy.version>2.3.5.Final</org.jboss.resteasy.version>
-    <org.overlord.sramp.version>0.0.3-SNAPSHOT</org.overlord.sramp.version>
-  </properties>
+
+  <repositories>
+    <repository>
+      <id>jboss-public-repository-group</id>
+      <name>JBoss Public Repository Group</name>
+      <url>http://repository.jboss.org/nexus/content/groups/developer/</url>
+      <layout>default</layout>
+      <releases>
+        <enabled>true</enabled>
+        <updatePolicy>never</updatePolicy>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+        <updatePolicy>never</updatePolicy>
+      </snapshots>
+    </repository>
+  </repositories>
+
   <dependencies>
     <dependency>
       <groupId>org.overlord.sramp</groupId>
       <artifactId>s-ramp-server</artifactId>
-      <version>${org.overlord.sramp.version}</version>
+      <version>${project.version}</version>
       <classifier>classes</classifier>
     </dependency>
     <dependency>
       <groupId>org.overlord.sramp</groupId>
       <artifactId>s-ramp-repository-jcr</artifactId>
-      <version>${org.overlord.sramp.version}</version>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.overlord.sramp</groupId>
+      <artifactId>s-ramp-repository-jcr-modeshape</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.jboss.resteasy</groupId>
@@ -33,9 +56,24 @@
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
-      <version>2.5</version>
+    </dependency>
+    <dependency>
+      <groupId>org.modeshape</groupId>
+      <artifactId>modeshape-jcr</artifactId>
+      <version>${org.modeshape.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <scope>runtime</scope>
     </dependency>
   </dependencies>
+
   <build>
     <plugins>
       <plugin>
