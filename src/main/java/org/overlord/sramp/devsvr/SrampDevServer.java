@@ -44,7 +44,11 @@ public class SrampDevServer {
         System.setProperty("sramp.modeshape.config.url", "classpath://" + JCRRepository.class.getName()
                 + "/META-INF/modeshape-configs/inmemory-sramp-config.json");
         System.out.println("**** Starting up the S-RAMP Repository...");
-        deployment = EmbeddedContainer.start();
+        String portVar = System.getProperty("org.jboss.resteasy.port");
+        if (portVar == null) {
+            System.setProperty("org.jboss.resteasy.port", "8080");
+        }
+        deployment = EmbeddedContainer.start("/s-ramp-server/");
         dispatcher = deployment.getDispatcher();
         deployment.getProviderFactory().registerProvider(SrampAtomExceptionProvider.class);
         deployment.getProviderFactory().registerProvider(HttpResponseProvider.class);
