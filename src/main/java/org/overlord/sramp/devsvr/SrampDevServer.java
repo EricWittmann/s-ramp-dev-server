@@ -24,6 +24,7 @@ import org.overlord.sramp.repository.jcr.JCRRepository;
 import org.overlord.sramp.server.atom.services.ArtifactResource;
 import org.overlord.sramp.server.atom.services.BatchResource;
 import org.overlord.sramp.server.atom.services.FeedResource;
+import org.overlord.sramp.server.atom.services.OntologyResource;
 import org.overlord.sramp.server.atom.services.QueryResource;
 import org.overlord.sramp.server.atom.services.ServiceDocumentResource;
 
@@ -57,6 +58,7 @@ public class SrampDevServer {
         dispatcher.getRegistry().addPerRequestResource(FeedResource.class);
         dispatcher.getRegistry().addPerRequestResource(BatchResource.class);
         dispatcher.getRegistry().addPerRequestResource(QueryResource.class);
+        dispatcher.getRegistry().addPerRequestResource(OntologyResource.class);
         System.out.println("*** S-RAMP repository started");
     }
 
