@@ -16,7 +16,9 @@
 package org.overlord.sramp.devsvr;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.overlord.commons.ui.header.OverlordHeaderDataJS;
@@ -329,5 +331,42 @@ public class DevServerEnvironment {
         } catch (ClassNotFoundException e) {
             this.usingClassHiderAgent = false;
         }
+    }
+
+    /**
+     * Creates the UI application configs and sets the system property telling the Overlord
+     * Header servlet where to find them.
+     * @throws Exception
+     */
+    public void createAppConfigs() throws Exception {
+        File dir = new File(this.targetDir, "overlord-apps");
+        if (dir.isDirectory()) {
+            FileUtils.deleteDirectory(dir);
+        }
+        dir.mkdirs();
+
+        File configFile1 = new File(dir, "srampui-overlordapp.properties");
+        Properties props = new Properties();
+        props.setProperty("overlordapp.app-id", "s-ramp-ui");
+        props.setProperty("overlordapp.href", "/s-ramp-ui/index.html?gwt.codesvr=127.0.0.1:9997");
+        props.setProperty("overlordapp.label", "S-RAMP");
+        props.store(new FileWriter(configFile1), "S-RAMP UI application");
+
+        File configFile2 = new File(dir, "dtgov-overlordapp.properties");
+        props = new Properties();
+        props.setProperty("overlordapp.app-id", "dtgov");
+        props.setProperty("overlordapp.href", "/dtgov/index.html?gwt.codesvr=127.0.0.1:9997");
+        props.setProperty("overlordapp.label", "DTGov");
+        props.store(new FileWriter(configFile2), "DTGov UI application");
+
+        File configFile3 = new File(dir, "gadgets-overlordapp.properties");
+        props = new Properties();
+        props.setProperty("overlordapp.app-id", "gadgets");
+        props.setProperty("overlordapp.href", "/gadgets/");
+        props.setProperty("overlordapp.label", "Gadget Server");
+        props.store(new FileWriter(configFile3), "Gadget Server UI application");
+
+        System.setProperty("org.overlord.apps.config-dir", dir.getCanonicalPath());
+        System.out.println("Generated app configs in: " + dir.getCanonicalPath());
     }
 }

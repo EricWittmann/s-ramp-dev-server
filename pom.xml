@@ -16,6 +16,7 @@
     <servlet-api.version>2.5</servlet-api.version>
     <gwt.version>2.5.0</gwt.version>
     <errai.version>3.0-SNAPSHOT</errai.version>
+    <commons.io.version>2.4</commons.io.version>
   </properties>
 
   <repositories>
@@ -43,6 +44,12 @@
     </dependency>
 
     <!-- S-RAMP Server -->
+    <dependency>
+      <groupId>org.overlord.sramp</groupId>
+      <artifactId>s-ramp-server</artifactId>
+      <version>${s-ramp.version}</version>
+      <type>war</type>
+    </dependency>
     <dependency>
       <groupId>org.overlord.sramp</groupId>
       <artifactId>s-ramp-server</artifactId>
@@ -109,6 +116,12 @@
     </dependency>
 
     <!-- S-RAMP UI -->
+    <dependency>
+      <groupId>org.overlord.sramp</groupId>
+      <artifactId>s-ramp-ui-war</artifactId>
+      <version>${s-ramp.version}</version>
+      <type>war</type>
+    </dependency>
     <dependency>
       <groupId>org.overlord.sramp</groupId>
       <artifactId>s-ramp-ui-war</artifactId>

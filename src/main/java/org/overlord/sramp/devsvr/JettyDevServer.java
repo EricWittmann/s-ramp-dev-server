@@ -74,6 +74,7 @@ public class JettyDevServer {
             System.out.println("******************************************************************");
             Thread.sleep(5000);
         }
+        environment.createAppConfigs();
 
         /* *********
          * S-RAMP UI
@@ -97,7 +98,9 @@ public class JettyDevServer {
         srampUI.addServlet(erraiServlet, "*.erraiBus");
         srampUI.addServlet(new ServletHolder(ArtifactDownloadServlet.class), "/app/services/artifactDownload");
         srampUI.addServlet(new ServletHolder(ArtifactUploadServlet.class), "/app/services/artifactUpload");
-        srampUI.addServlet(new ServletHolder(OverlordHeaderDataJS.class), "/js/overlord-header-data.js");
+        ServletHolder headerDataServlet = new ServletHolder(OverlordHeaderDataJS.class);
+        headerDataServlet.setInitParameter("app-id", "s-ramp-ui");
+        srampUI.addServlet(headerDataServlet, "/js/overlord-header-data.js");
         // File resources
         ServletHolder resources = new ServletHolder(new MultiDefaultServlet());
         resources.setInitParameter("resourceBase", "/");
