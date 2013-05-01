@@ -52,7 +52,7 @@ much essential since all the projects we'll be dealing with are maven projects h
 In addition, you may want to install the Google Web Toolkit Eclipse plugin (from the Eclipse Marketplace) if
 you are planning on contributing UI code.
 
-Lastly, another helpful Eclipse plugin is jRebel.  It's optional, but it can make life a little bit easier.
+Lastly, another helpful Eclipse plugin is JRebel.  It's optional, but it can make life a little bit easier.
 Later in this guide we have some instructions on how to configure it.
 
 ===== 2. Clone Relevant Repositories
@@ -68,7 +68,7 @@ to.
 > git clone git://github.com/EricWittmann/s-ramp-dev-server.git
 ----
 
-===== 3. Build All Using Maven
+===== 3. Build Using Maven
 Ok, really you only need to build the s-ramp project, because there is a code generation step in that project 
 that should be accomplished prior to importing it into Eclipse.  This ensures that the proper code has been
 generated and the codegen target directory has been created.
@@ -109,9 +109,83 @@ That will allow you to change files in Eclipse and have those changes automatica
 browser refresh.  Also note that because you are running the S-RAMP Dev Server from Eclipse, you can simply
 modify Java code in Eclipse and expect that your changes will take effect next time you launch the server.
 
-TIP: See the section about running with jRebel for an even *faster* way to see your code changes in action!
+TIP: See the section about running with JRebel for an even *faster* way to see your code changes in action!
 
 ===== 6. (Optional) Launch S-RAMP Browser in GWT Hosted Mode
 (To be written)
 
-==== (Advanced) Running with jRebel
+==== (Advanced) Running with JRebel
+If you're looking to be more productive, you may want to give JRebel a try.  JRebel can be used for both
+the server-side components (the S-RAMP Development Server) and the client-side (GWT) components.  In both
+cases you obviously need to install the JRebel Eclipse plugin from the Marketplace.
+
+===== Server Side JRebel
+In order to enable JRebel for the server-side components, follow these steps:
+
+. Add the JRebel Nature to *s-ramp-dev-server*
+.. Right-click on *s-ramp-dev-server*
+.. Choose *JRebel->Add JRebel Nature*
+. Generate a *rebel.xml* file
+.. Right-click on *s-ramp-dev-server*
+.. Choose *JRebel->Advanced Properties*
+.. Uncheck *Generate on build*
+.. Click the *Generate Now!* button
+.. Click the *Open rebel.xml* button
+.. Click *OK*
+. Modify the *rebel.xml* file to include all S-RAMP target/classes paths
+.. Many (but not all) of the S-RAMP projects should be included
+.. See below for an example rebel.xml (just change the paths):
+
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+      xmlns="http://www.zeroturnaround.com" 
+      xsi:schemaLocation="http://www.zeroturnaround.com http://www.zeroturnaround.com/alderaan/rebel-2_0.xsd">
+    <classpath>
+        <!-- S-RAMP -->
+        <dir name="/home/sholmes/git/s-ramp/s-ramp-api/target/classes"></dir>
+        <dir name="/home/sholmes/git/s-ramp/s-ramp-atom/target/classes"></dir>
+        <dir name="/home/sholmes/git/s-ramp/s-ramp-client/target/classes"></dir>
+        <dir name="/home/sholmes/git/s-ramp/s-ramp-common/target/classes"></dir>
+        <dir name="/home/sholmes/git/s-ramp/s-ramp-repository/target/classes"></dir>
+        <dir name="/home/sholmes/git/s-ramp/s-ramp-repository-jcr/target/classes"></dir>
+        <dir name="/home/sholmes/git/s-ramp/s-ramp-repository-jcr/modeshape/target/classes"></dir>
+        <dir name="/home/sholmes/git/s-ramp/s-ramp-server/target/classes"></dir>
+        <!-- S-RAMP UI -->
+        <dir name="/home/sholmes/git/s-ramp-ui/s-ramp-ui-war/src/main/webapp/WEB-INF/classes"></dir>
+        <dir name="/home/sholmes/git/s-ramp-ui/s-ramp-ui-widgets/target/classes"></dir>
+        <!-- Overlord Commons -->
+        <dir name="/home/sholmes/git/overlord-commons/overlord-commons-uiheader/target/classes"></dir>
+    </classpath>
+</application>
+
+----
+
+===== Client Side JRebel
+It is, of course, very similar to set up JRebel for your GWT Web Application launch.  Simply do the following:
+
+. Add the JRebel Nature to *s-ramp-ui-war*
+.. Right-click on *s-ramp-ui-war*
+.. Choose *JRebel->Add JRebel Nature*
+. Generate a *rebel.xml* file
+.. Right-click on *s-ramp-ui-war*
+.. Choose *JRebel->Advanced Properties*
+.. Uncheck *Generate on build*
+.. Click the *Generate Now!* button
+.. Click the *Open rebel.xml* button
+.. Click *OK*
+. Modify the *rebel.xml* file to include the S-RAMP UI classpaths 
+.. Include both s-ramp-ui-war and s-ramp-ui-widgets
+.. See below for an example rebel.xml (just change the paths):
+
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+      xmlns="http://www.zeroturnaround.com" 
+      xsi:schemaLocation="http://www.zeroturnaround.com http://www.zeroturnaround.com/alderaan/rebel-2_0.xsd">
+    <classpath>
+        <dir name="/home/sholmes/git/s-ramp-ui/s-ramp-ui-war/src/main/webapp/WEB-INF/classes"></dir>
+        <dir name="/home/sholmes/git/s-ramp-ui/s-ramp-ui-widgets/target/classes"></dir>
+    </classpath>
+</application>
+----
