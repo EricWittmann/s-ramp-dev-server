@@ -18,7 +18,7 @@ If you're just looking to get started quickly and aren't too concerned about deb
 of Java classes and web resources, you can simply run everything from Maven:
 
 ----
-> mvn -Prun clean package
+mvn -Prun clean package
 ----
 
 In this scenario, the S-RAMP Development Server will download all relevant dependencies, including the 
@@ -62,12 +62,12 @@ You can clone all or only some of the repositories, depending on what aspect of 
 to.
 
 ----
-> mkdir ~/git
-> cd ~/git
-> git clone git://github.com/Governance/s-ramp.git
-> git clone git://github.com/Governance/s-ramp-ui.git
-> git clone git://github.com/Governance/overlord-commons.git
-> git clone git://github.com/EricWittmann/s-ramp-dev-server.git
+mkdir ~/git
+cd ~/git
+git clone git://github.com/Governance/s-ramp.git
+git clone git://github.com/Governance/s-ramp-ui.git
+git clone git://github.com/Governance/overlord-commons.git
+git clone git://github.com/EricWittmann/s-ramp-dev-server.git
 ----
 
 ===== 3. Build Using Maven
@@ -76,8 +76,8 @@ that should be accomplished prior to importing it into Eclipse.  This ensures th
 generated and the codegen target directory has been created.
 
 ----
-> cd s-ramp
-> mvn clean package
+cd s-ramp
+mvn clean package
 ----
 
 ===== 4. Import Projects Into Eclipse
