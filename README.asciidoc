@@ -25,6 +25,8 @@ In this scenario, the S-RAMP Development Server will download all relevant depen
 s-ramp-server WAR and the s-ramp-ui WAR.  It will then unpack necessary files into s-ramp-dev-server/target 
 and launch Jetty, deploying using the unpacked files in target.
 
+If everything starts up cleanly, you can go here:  http://localhost:8080/s-ramp-ui/index.html
+
 When running in this way, the Java code and other resources are not editable in-place.  However, it will 
 provide a *very* quick runtime environment for testing out S-RAMP.
 
