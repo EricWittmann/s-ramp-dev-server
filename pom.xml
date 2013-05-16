@@ -9,6 +9,7 @@
   <properties>
     <s-ramp.version>0.1.2-SNAPSHOT</s-ramp.version>
     <s-ramp-ui.version>0.1.2-SNAPSHOT</s-ramp-ui.version>
+    <dtgov.version>0.1.0-SNAPSHOT</dtgov.version>
     <org.jboss.resteasy.version>2.3.5.Final</org.jboss.resteasy.version>
     <org.modeshape.version>3.2.0.Final</org.modeshape.version>
     <slf4j.log4j.version>1.5.11</slf4j.log4j.version>
@@ -119,13 +120,13 @@
     <dependency>
       <groupId>org.overlord.sramp</groupId>
       <artifactId>s-ramp-ui-war</artifactId>
-      <version>${s-ramp.version}</version>
+      <version>${s-ramp-ui.version}</version>
       <type>war</type>
     </dependency>
     <dependency>
       <groupId>org.overlord.sramp</groupId>
       <artifactId>s-ramp-ui-war</artifactId>
-      <version>${s-ramp.version}</version>
+      <version>${s-ramp-ui.version}</version>
       <classifier>classes</classifier>
       <exclusions>
         <exclusion>
@@ -138,6 +139,32 @@
         </exclusion>
       </exclusions>
     </dependency>
+    
+    <!-- DTGov UI -->
+    <dependency>
+      <groupId>org.overlord.dtgov</groupId>
+      <artifactId>dtgov-ui-war</artifactId>
+      <version>${dtgov.version}</version>
+      <type>war</type>
+    </dependency>
+    <dependency>
+      <groupId>org.overlord.dtgov</groupId>
+      <artifactId>dtgov-ui-war</artifactId>
+      <version>${dtgov.version}</version>
+      <classifier>classes</classifier>
+      <exclusions>
+        <exclusion>
+          <artifactId>jboss-logging</artifactId>
+          <groupId>org.jboss.logging</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>slf4j-api</artifactId>
+          <groupId>org.slf4j</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    
+    <!-- Jetty -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
@@ -195,7 +222,7 @@
               </execution>
             </executions>
             <configuration>
-              <mainClass>org.overlord.sramp.devsvr.JettyDevServer</mainClass>
+              <mainClass>org.overlord.sramp.devsvr.SrampJettyDevServer</mainClass>
             </configuration>
           </plugin>
         </plugins>

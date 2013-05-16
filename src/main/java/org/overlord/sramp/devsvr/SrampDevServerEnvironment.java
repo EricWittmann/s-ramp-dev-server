@@ -22,6 +22,7 @@ import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.overlord.commons.ui.header.OverlordHeaderDataJS;
+import org.overlord.dtgov.ui.server.DtgovUI;
 import org.overlord.sramp.atom.archive.ArchiveUtils;
 import org.overlord.sramp.ui.client.shared.beans.ArtifactSummaryBean;
 
@@ -29,14 +30,14 @@ import org.overlord.sramp.ui.client.shared.beans.ArtifactSummaryBean;
  * Holds information about the S-RAMP development runtime environment.
  * @author eric.wittmann@redhat.com
  */
-public class DevServerEnvironment {
+public class SrampDevServerEnvironment {
 
     /**
      * Determine the current runtime environment.
      * @param args
      */
-    public static DevServerEnvironment discover(String[] args) {
-        final DevServerEnvironment environment = new DevServerEnvironment(args);
+    public static SrampDevServerEnvironment discover(String[] args) {
+        final SrampDevServerEnvironment environment = new SrampDevServerEnvironment(args);
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
@@ -47,24 +48,32 @@ public class DevServerEnvironment {
     }
 
     private boolean ide_srampUI = false;
+    private boolean ide_dtgovUI = false;
     private boolean ide_overlordHeader = false;
     private boolean usingClassHiderAgent = false;
 
     private File targetDir;
     private File srampUIWebAppDir;
+    private File dtgovUIWebAppDir;
     private File overlordHeaderDir;
 
     private File srampUIWorkDir = null;
+    private File dtgovUIWorkDir = null;
     private File overlordCommonsWorkDir = null;
 
     /**
      * Constructor.
      * @param args
      */
-    private DevServerEnvironment(String[] args) {
+    private SrampDevServerEnvironment(String[] args) {
         findTargetDir();
+        System.out.println("----------------------------------");
         findSrampUIWebAppDir();
+        System.out.println("----------------------------------\n");
+        findDtgovUIWebAppDir();
+        System.out.println("----------------------------------\n");
         findOverlordCommonsDir();
+        System.out.println("----------------------------------\n");
         inspectArgs(args);
         detectAgent();
     }
@@ -75,6 +84,7 @@ public class DevServerEnvironment {
      */
     protected void onVmExit() {
         cleanSrampUIWorkDir();
+        cleanDtgovUIWorkDir();
         cleanOverlordCommonsWorkDir();
     }
 
@@ -86,10 +96,10 @@ public class DevServerEnvironment {
     }
 
     /**
-     * @param ide_srampUI the ide_srampUI to set
+     * @return the ide_dtgovUI
      */
-    public void setIde_srampUI(boolean ide_srampUI) {
-        this.ide_srampUI = ide_srampUI;
+    public boolean isIde_dtgovUI() {
+        return ide_dtgovUI;
     }
 
     /**
@@ -97,13 +107,6 @@ public class DevServerEnvironment {
      */
     public boolean isIde_overlordHeader() {
         return ide_overlordHeader;
-    }
-
-    /**
-     * @param ide_overlordHeader the ide_overlordHeader to set
-     */
-    public void setIde_overlordHeader(boolean ide_overlordHeader) {
-        this.ide_overlordHeader = ide_overlordHeader;
     }
 
     /**
@@ -125,6 +128,13 @@ public class DevServerEnvironment {
      */
     public File getSrampUIWebAppDir() {
         return srampUIWebAppDir;
+    }
+
+    /**
+     * @return the dtgovUIWebAppDir
+     */
+    public File getDtgovUIWebAppDir() {
+        return dtgovUIWebAppDir;
     }
 
     /**
@@ -152,8 +162,8 @@ public class DevServerEnvironment {
      * @return the maven target dir
      */
     private void findTargetDir() {
-        String path = JettyDevServer.class.getClassLoader()
-                .getResource(JettyDevServer.class.getName().replace('.', '/') + ".class").getPath();
+        String path = SrampJettyDevServer.class.getClassLoader()
+                .getResource(SrampJettyDevServer.class.getName().replace('.', '/') + ".class").getPath();
         if (path == null) {
             throw new RuntimeException("Failed to find target directory.");
         }
@@ -220,6 +230,62 @@ public class DevServerEnvironment {
         }
 
         throw new RuntimeException("Failed to find S-RAMP UI webapp directory.");
+    }
+
+    /**
+     * Attempts to find the webapp directory for the DTGov UI.  When running in Eclipse
+     * this should return a file path to the src/main/webapp folder of dtgov-ui-war.
+     * When not running in Eclipse, this should unpack the WAR to a temporary location
+     * and return a path to it.
+     */
+    private void findDtgovUIWebAppDir() {
+        String path = DtgovUI.class.getClassLoader()
+                .getResource(DtgovUI.class.getName().replace('.', '/') + ".class").getPath();
+        if (path == null) {
+            throw new RuntimeException("Failed to find DTGov UI war.");
+        }
+        File file = new File(path);
+        // The class file is available on the file system.
+        if (file.exists()) {
+            System.out.println("Detected DTGov UI classes on the filesystem.");
+            System.out.println("\tAssumption: dtgov-ui-war is imported into your IDE");
+            this.ide_dtgovUI = true;
+            if (path.contains("/WEB-INF/classes/")) {
+                String pathToWebApp = path.substring(0, path.indexOf("/WEB-INF/classes/"));
+                this.dtgovUIWebAppDir = new File(pathToWebApp);
+                System.out.println("Detected DTGov UI web app: " + getDtgovUIWebAppDir());
+                return;
+            } else {
+                throw new RuntimeException("Failed to find dtgov-ui-war/src/main/webapp.");
+            }
+        } else {
+            System.out.println("Detected DTGov UI classes in JAR.");
+            System.out.println("\tAssumption: not running from IDE or dtgov-ui-war not imported");
+            this.ide_dtgovUI = false;
+            if (path.contains("-classes.jar") && path.startsWith("file:")) {
+                String pathToWar = path.substring(5, path.indexOf("-classes.jar")) + ".war";
+                File war = new File(pathToWar);
+                if (war.isFile()) {
+                    System.out.println("Discovered DTGov UI War: " + war);
+                    this.dtgovUIWorkDir = new File(this.targetDir, "dtgov-ui-war");
+                    cleanDtgovUIWorkDir();
+                    this.dtgovUIWorkDir.mkdirs();
+                    try {
+                        System.out.println("Unpacking DTGov UI war to: " + dtgovUIWorkDir);
+                        ArchiveUtils.unpackToWorkDir(war, dtgovUIWorkDir);
+                        FileUtils.deleteDirectory(new File(dtgovUIWorkDir, "WEB-INF/lib"));
+                        FileUtils.deleteDirectory(new File(dtgovUIWorkDir, "WEB-INF/classes/org/overlord/dtgov/ui/client/local"));
+                        this.dtgovUIWebAppDir = dtgovUIWorkDir;
+                        System.out.println("Detected S-RAMP UI web app: " + getDtgovUIWebAppDir());
+                        return;
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        }
+
+        throw new RuntimeException("Failed to find DTGov UI webapp directory.");
     }
 
     /**
@@ -301,6 +367,15 @@ public class DevServerEnvironment {
     }
 
     /**
+     * Clean the dtgov ui work dir.
+     */
+    private void cleanDtgovUIWorkDir() {
+        if (dtgovUIWorkDir != null) {
+            try { FileUtils.deleteDirectory(dtgovUIWorkDir); } catch (IOException e) { e.printStackTrace(); }
+        }
+    }
+
+    /**
      * @return the usingClassHiderAgent
      */
     public boolean isUsingClassHiderAgent() {
@@ -348,15 +423,19 @@ public class DevServerEnvironment {
         File configFile1 = new File(dir, "srampui-overlordapp.properties");
         Properties props = new Properties();
         props.setProperty("overlordapp.app-id", "s-ramp-ui");
-        props.setProperty("overlordapp.href", "/s-ramp-ui/index.html?gwt.codesvr=127.0.0.1:9997");
+        props.setProperty("overlordapp.href", "/s-ramp-ui/index.html" + (ide_srampUI ? "?gwt.codesvr=127.0.0.1:9997" : ""));
         props.setProperty("overlordapp.label", "S-RAMP");
+        props.setProperty("overlordapp.primary-brand", "JBoss Overlord");
+        props.setProperty("overlordapp.secondary-brand", "S-RAMP Repository");
         props.store(new FileWriter(configFile1), "S-RAMP UI application");
 
         File configFile2 = new File(dir, "dtgov-overlordapp.properties");
         props = new Properties();
         props.setProperty("overlordapp.app-id", "dtgov");
-        props.setProperty("overlordapp.href", "/dtgov/index.html?gwt.codesvr=127.0.0.1:9997");
+        props.setProperty("overlordapp.href", "/dtgov/index.html" + (ide_dtgovUI ? "?gwt.codesvr=127.0.0.1:9997" : ""));
         props.setProperty("overlordapp.label", "DTGov");
+        props.setProperty("overlordapp.primary-brand", "JBoss Overlord");
+        props.setProperty("overlordapp.secondary-brand", "Design Time Governance");
         props.store(new FileWriter(configFile2), "DTGov UI application");
 
         File configFile3 = new File(dir, "gadgets-overlordapp.properties");
@@ -364,9 +443,12 @@ public class DevServerEnvironment {
         props.setProperty("overlordapp.app-id", "gadgets");
         props.setProperty("overlordapp.href", "/gadgets/");
         props.setProperty("overlordapp.label", "Gadget Server");
+        props.setProperty("overlordapp.primary-brand", "JBoss Overlord");
+        props.setProperty("overlordapp.secondary-brand", "Gadget Server");
         props.store(new FileWriter(configFile3), "Gadget Server UI application");
 
         System.setProperty("org.overlord.apps.config-dir", dir.getCanonicalPath());
         System.out.println("Generated app configs in: " + dir.getCanonicalPath());
     }
+
 }

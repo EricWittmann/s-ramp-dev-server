@@ -15,10 +15,12 @@
  */
 package org.overlord.sramp.devsvr;
 
+import java.io.InputStream;
 import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
 
+import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -27,11 +29,15 @@ import org.jboss.errai.bus.server.servlet.DefaultBlockingServlet;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.jboss.weld.environment.servlet.BeanManagerResourceBindingListener;
 import org.jboss.weld.environment.servlet.Listener;
+import org.oasis_open.docs.s_ramp.ns.s_ramp_v1.BaseArtifactType;
+import org.overlord.commons.gwt.server.filters.GWTCacheControlFilter;
+import org.overlord.commons.gwt.server.filters.ResourceCacheControlFilter;
 import org.overlord.commons.ui.header.OverlordHeaderDataJS;
+import org.overlord.sramp.client.SrampAtomApiClient;
+import org.overlord.sramp.common.ArtifactType;
+import org.overlord.sramp.common.SrampModelUtils;
 import org.overlord.sramp.repository.jcr.JCRRepository;
 import org.overlord.sramp.server.atom.services.SRAMPApplication;
-import org.overlord.sramp.ui.server.filters.GWTCacheControlFilter;
-import org.overlord.sramp.ui.server.filters.ResourceCacheControlFilter;
 import org.overlord.sramp.ui.server.servlets.ArtifactDownloadServlet;
 import org.overlord.sramp.ui.server.servlets.ArtifactUploadServlet;
 
@@ -39,7 +45,7 @@ import org.overlord.sramp.ui.server.servlets.ArtifactUploadServlet;
  *
  * @author eric.wittmann@redhat.com
  */
-public class JettyDevServer {
+public class SrampJettyDevServer {
 
     /**
      * Main entry point.
@@ -57,7 +63,7 @@ public class JettyDevServer {
         System.setProperty("s-ramp-ui.resource-caching.disabled", "true");
         System.out.println("**** Starting up the S-RAMP Repository in jetty 9...");
 
-        DevServerEnvironment environment = DevServerEnvironment.discover(args);
+        SrampDevServerEnvironment environment = SrampDevServerEnvironment.discover(args);
         if (environment.isIde_srampUI() && !environment.isUsingClassHiderAgent()) {
             System.out.println("******************************************************************");
             System.out.println("WARNING: we detected that you are running from within an IDE");
@@ -81,6 +87,7 @@ public class JettyDevServer {
          * ********* */
         ServletContextHandler srampUI = new ServletContextHandler(ServletContextHandler.SESSIONS);
         srampUI.setContextPath("/s-ramp-ui");
+        srampUI.setWelcomeFiles(new String[] { "index.html" });
         srampUI.setResourceBase(environment.getSrampUIWebAppDir().getCanonicalPath());
         srampUI.setInitParameter("errai.properties", "/WEB-INF/errai.properties");
         srampUI.setInitParameter("login.config", "/WEB-INF/login.config");
@@ -113,6 +120,40 @@ public class JettyDevServer {
             srampUI.addServlet(resources, "*." + fileType);
         }
 
+        /* *********
+         * DTGov UI
+         * ********* */
+        ServletContextHandler dtgovUI = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        dtgovUI.setContextPath("/dtgov");
+        dtgovUI.setWelcomeFiles(new String[] { "index.html" });
+        dtgovUI.setResourceBase(environment.getDtgovUIWebAppDir().getCanonicalPath());
+        dtgovUI.setInitParameter("errai.properties", "/WEB-INF/errai.properties");
+        dtgovUI.setInitParameter("login.config", "/WEB-INF/login.config");
+        dtgovUI.setInitParameter("users.properties", "/WEB-INF/users.properties");
+        dtgovUI.addEventListener(new Listener());
+        dtgovUI.addEventListener(new BeanManagerResourceBindingListener());
+        dtgovUI.addFilter(GWTCacheControlFilter.class, "/app/*", EnumSet.of(DispatcherType.REQUEST));
+        dtgovUI.addFilter(ResourceCacheControlFilter.class, "/css/*", EnumSet.of(DispatcherType.REQUEST));
+        dtgovUI.addFilter(ResourceCacheControlFilter.class, "/images/*", EnumSet.of(DispatcherType.REQUEST));
+        dtgovUI.addFilter(ResourceCacheControlFilter.class, "/js/*", EnumSet.of(DispatcherType.REQUEST));
+        // Servlets
+        erraiServlet = new ServletHolder(DefaultBlockingServlet.class);
+        erraiServlet.setInitOrder(1);
+        dtgovUI.addServlet(erraiServlet, "*.erraiBus");
+        headerDataServlet = new ServletHolder(OverlordHeaderDataJS.class);
+        headerDataServlet.setInitParameter("app-id", "dtgov");
+        dtgovUI.addServlet(headerDataServlet, "/js/overlord-header-data.js");
+        // File resources
+        resources = new ServletHolder(new MultiDefaultServlet());
+        resources.setInitParameter("resourceBase", "/");
+        resources.setInitParameter("resourceBases", environment.getDtgovUIWebAppDir().getCanonicalPath()
+                + "|" + environment.getOverlordHeaderDir().getCanonicalPath());
+        resources.setInitParameter("dirAllowed", "true");
+        resources.setInitParameter("pathInfoOnly", "false");
+        for (String fileType : fileTypes) {
+            dtgovUI.addServlet(resources, "*." + fileType);
+        }
+
         /* *************
          * S-RAMP server
          * ************* */
@@ -122,10 +163,12 @@ public class JettyDevServer {
         resteasyServlet.setInitParameter("javax.ws.rs.Application", SRAMPApplication.class.getName());
         srampServer.addServlet(resteasyServlet, "/*");
 
+
+        // Create the list of handlers - one for each web context
         ContextHandlerCollection handlers = new ContextHandlerCollection();
         handlers.addHandler(srampUI);
+//        handlers.addHandler(dtgovUI);
         handlers.addHandler(srampServer);
-
 
         // Create the server.
         Server server = new Server(8080);
@@ -133,7 +176,79 @@ public class JettyDevServer {
         server.start();
         long endTime = System.currentTimeMillis();
         System.out.println("******* Started up in " + (endTime - startTime) + "ms");
+
+        seedRepository();
+
         server.join();
+    }
+
+    /**
+     * Adds some initial data to the s-ramp repository.
+     * @throws Exception
+     */
+    private static void seedRepository() throws Exception {
+        System.out.println("----------  Seeding the Repository  ---------------");
+
+        SrampAtomApiClient client = new SrampAtomApiClient("http://localhost:8080/s-ramp-server");
+        InputStream is = null;
+
+        // Ontology #1
+        try {
+            is = SrampJettyDevServer.class.getResourceAsStream("colors.owl.xml");
+            client.uploadOntology(is);
+            System.out.println("\tOntology 1 added");
+        } finally {
+            IOUtils.closeQuietly(is);
+        }
+
+        // Ontology #2
+        try {
+            is = SrampJettyDevServer.class.getResourceAsStream("regional.owl.xml");
+            client.uploadOntology(is);
+            System.out.println("\tOntology 2 added");
+        } finally {
+            IOUtils.closeQuietly(is);
+        }
+
+        // PDF Document
+        try {
+            is = SrampJettyDevServer.class.getResourceAsStream("sample.pdf");
+            BaseArtifactType artifact = client.uploadArtifact(ArtifactType.Document(), is, "sample.pdf");
+            artifact.setDescription("This is just a sample PDF file that is included in the dev server so that we have some content when we start up.");
+            artifact.setVersion("1.0");
+            client.updateArtifactMetaData(artifact);
+            System.out.println("\tPDF added");
+        } finally {
+            IOUtils.closeQuietly(is);
+        }
+
+        // XML Document
+        try {
+            is = SrampJettyDevServer.class.getResourceAsStream("order.xml");
+            BaseArtifactType artifact = client.uploadArtifact(ArtifactType.XmlDocument(), is, "order.xml");
+            artifact.getClassifiedBy().add("http://www.example.org/colors.owl#Blue");
+            SrampModelUtils.setCustomProperty(artifact, "foo", "bar");
+            SrampModelUtils.setCustomProperty(artifact, "angle", "obtuse");
+            client.updateArtifactMetaData(artifact);
+            System.out.println("\tXML file added");
+        } finally {
+            IOUtils.closeQuietly(is);
+        }
+
+        // WSDL Document
+        try {
+            is = SrampJettyDevServer.class.getResourceAsStream("deriver.wsdl");
+            BaseArtifactType artifact = client.uploadArtifact(ArtifactType.WsdlDocument(), is, "deriver.wsdl");
+            artifact.getClassifiedBy().add("http://www.example.org/colors.owl#Red");
+            artifact.getClassifiedBy().add("http://www.example.org/regional.owl#Asia");
+            client.updateArtifactMetaData(artifact);
+            System.out.println("\tWSDL added");
+        } finally {
+            IOUtils.closeQuietly(is);
+        }
+
+        System.out.println("----------  DONE  ---------------");
+
     }
 
 }
