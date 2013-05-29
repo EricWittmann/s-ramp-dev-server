@@ -241,6 +241,8 @@ public class SrampDevServer extends ErraiDevServer {
         }
 
         System.out.println("----------  DONE  ---------------");
+        System.out.println("Now try:  \n  http://localhost:8080/s-ramp-ui/index.html");
+        System.out.println("---------------------------------");
     }
 
 }
