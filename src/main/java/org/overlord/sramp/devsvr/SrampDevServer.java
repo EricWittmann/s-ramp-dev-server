@@ -39,9 +39,14 @@ import org.overlord.commons.dev.server.discovery.WebAppModuleFromIDEDiscoveryStr
 import org.overlord.commons.gwt.server.filters.GWTCacheControlFilter;
 import org.overlord.commons.gwt.server.filters.ResourceCacheControlFilter;
 import org.overlord.commons.ui.header.OverlordHeaderDataJS;
+import org.overlord.sramp.atom.archive.SrampArchive;
+import org.overlord.sramp.atom.archive.jar.JarToSrampArchive;
+import org.overlord.sramp.atom.err.SrampAtomException;
 import org.overlord.sramp.client.SrampAtomApiClient;
+import org.overlord.sramp.client.SrampClientException;
 import org.overlord.sramp.common.ArtifactType;
 import org.overlord.sramp.common.SrampModelUtils;
+import org.overlord.sramp.integration.switchyard.jar.SwitchYardAppToSrampArchive;
 import org.overlord.sramp.repository.jcr.JCRRepository;
 import org.overlord.sramp.server.atom.services.SRAMPApplication;
 import org.overlord.sramp.ui.client.shared.beans.ArtifactSummaryBean;
@@ -183,6 +188,25 @@ public class SrampDevServer extends ErraiDevServer {
         System.out.println("----------  Seeding the Repository  ---------------");
 
         SrampAtomApiClient client = new SrampAtomApiClient("http://localhost:8080/s-ramp-server");
+
+        String seedType = System.getProperty("s-ramp-dev-server.seed-type", "switchyard");
+        if ("switchyard".equals(seedType)) {
+            doSwitchYardSeed(client);
+        } else {
+            doStandardSeed(client);
+        }
+
+        System.out.println("----------  DONE  ---------------");
+        System.out.println("Now try:  \n  http://localhost:8080/s-ramp-ui/index.html");
+        System.out.println("---------------------------------");
+    }
+
+    /**
+     * @param client
+     * @throws SrampAtomException
+     * @throws SrampClientException
+     */
+    private void doStandardSeed(SrampAtomApiClient client) throws SrampClientException, SrampAtomException {
         InputStream is = null;
 
         // Ontology #1
@@ -239,10 +263,57 @@ public class SrampDevServer extends ErraiDevServer {
         } finally {
             IOUtils.closeQuietly(is);
         }
+    }
 
-        System.out.println("----------  DONE  ---------------");
-        System.out.println("Now try:  \n  http://localhost:8080/s-ramp-ui/index.html");
-        System.out.println("---------------------------------");
+    /**
+     * @param client
+     */
+    private void doSwitchYardSeed(SrampAtomApiClient client) throws Exception {
+        // Upload the artifacts jar
+        InputStream artifactsIS = this.getClass().getResourceAsStream("artifacts.jar");
+        SwitchYardAppToSrampArchive sy2archive = null;
+        SrampArchive archive = null;
+        try {
+            sy2archive = new SwitchYardAppToSrampArchive(artifactsIS);
+            archive = sy2archive.createSrampArchive();
+            client.uploadBatch(archive);
+            System.out.println("Added SwitchYard app (artifacts.jar)");
+        } finally {
+            IOUtils.closeQuietly(artifactsIS);
+            JarToSrampArchive.closeQuietly(sy2archive);
+            SrampArchive.closeQuietly(archive);
+        }
+
+        // Upload the order consumer jar
+        InputStream orderConsumerIS = this.getClass().getResourceAsStream("order-consumer.jar");
+        sy2archive = null;
+        archive = null;
+        try {
+            sy2archive = new SwitchYardAppToSrampArchive(orderConsumerIS);
+            archive = sy2archive.createSrampArchive();
+            client.uploadBatch(archive);
+            System.out.println("Added SwitchYard app (order-consumer.jar)");
+        } finally {
+            IOUtils.closeQuietly(artifactsIS);
+            JarToSrampArchive.closeQuietly(sy2archive);
+            SrampArchive.closeQuietly(archive);
+        }
+
+        // Upload the order service jar
+        InputStream orderServiceIS = this.getClass().getResourceAsStream("order-service.jar");
+        sy2archive = null;
+        archive = null;
+        try {
+            sy2archive = new SwitchYardAppToSrampArchive(orderServiceIS);
+            archive = sy2archive.createSrampArchive();
+            client.uploadBatch(archive);
+            System.out.println("Added SwitchYard app (order-service.jar)");
+        } finally {
+            IOUtils.closeQuietly(artifactsIS);
+            JarToSrampArchive.closeQuietly(sy2archive);
+            SrampArchive.closeQuietly(archive);
+        }
+
     }
 
 }
