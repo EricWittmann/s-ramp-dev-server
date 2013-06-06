@@ -64,8 +64,8 @@ public class SrampDevServer extends ErraiDevServer {
      * @param args
      */
     public static void main(String [] args) throws Exception {
-        System.setProperty("discovery-strategy.debug", "true");
         SrampDevServer devServer = new SrampDevServer(args);
+//        devServer.enableDebug();
         devServer.go();
     }
 
