@@ -187,7 +187,7 @@ public class SrampDevServer extends ErraiDevServer {
     protected void postStart(DevServerEnvironment environment) throws Exception {
         System.out.println("----------  Seeding the Repository  ---------------");
 
-        SrampAtomApiClient client = new SrampAtomApiClient("http://localhost:8080/s-ramp-server");
+        SrampAtomApiClient client = new SrampAtomApiClient("http://localhost:"+serverPort()+"/s-ramp-server");
 
         String seedType = System.getProperty("s-ramp-dev-server.seed-type", "switchyard");
         if ("switchyard".equals(seedType)) {
@@ -197,7 +197,7 @@ public class SrampDevServer extends ErraiDevServer {
         }
 
         System.out.println("----------  DONE  ---------------");
-        System.out.println("Now try:  \n  http://localhost:8080/s-ramp-ui/index.html");
+        System.out.println("Now try:  \n  http://localhost:"+serverPort()+"/s-ramp-ui/index.html");
         System.out.println("---------------------------------");
     }
 
