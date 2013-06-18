@@ -40,13 +40,13 @@ import org.overlord.commons.gwt.server.filters.GWTCacheControlFilter;
 import org.overlord.commons.gwt.server.filters.ResourceCacheControlFilter;
 import org.overlord.commons.ui.header.OverlordHeaderDataJS;
 import org.overlord.sramp.atom.archive.SrampArchive;
-import org.overlord.sramp.atom.archive.jar.JarToSrampArchive;
+import org.overlord.sramp.atom.archive.expand.ZipToSrampArchive;
 import org.overlord.sramp.atom.err.SrampAtomException;
 import org.overlord.sramp.client.SrampAtomApiClient;
 import org.overlord.sramp.client.SrampClientException;
 import org.overlord.sramp.common.ArtifactType;
 import org.overlord.sramp.common.SrampModelUtils;
-import org.overlord.sramp.integration.switchyard.jar.SwitchYardAppToSrampArchive;
+import org.overlord.sramp.integration.switchyard.expand.SwitchYardAppToSrampArchive;
 import org.overlord.sramp.repository.jcr.JCRRepository;
 import org.overlord.sramp.server.atom.services.SRAMPApplication;
 import org.overlord.sramp.ui.client.shared.beans.ArtifactSummaryBean;
@@ -192,8 +192,10 @@ public class SrampDevServer extends ErraiDevServer {
         String seedType = System.getProperty("s-ramp-dev-server.seed-type", "switchyard");
         if ("switchyard".equals(seedType)) {
             doSwitchYardSeed(client);
-        } else {
+        } else if ("standard".equals(seedType)) {
             doStandardSeed(client);
+        } else {
+            // no seeding
         }
 
         System.out.println("----------  DONE  ---------------");
@@ -280,7 +282,7 @@ public class SrampDevServer extends ErraiDevServer {
             System.out.println("Added SwitchYard app (artifacts.jar)");
         } finally {
             IOUtils.closeQuietly(artifactsIS);
-            JarToSrampArchive.closeQuietly(sy2archive);
+            ZipToSrampArchive.closeQuietly(sy2archive);
             SrampArchive.closeQuietly(archive);
         }
 
@@ -295,7 +297,7 @@ public class SrampDevServer extends ErraiDevServer {
             System.out.println("Added SwitchYard app (order-consumer.jar)");
         } finally {
             IOUtils.closeQuietly(artifactsIS);
-            JarToSrampArchive.closeQuietly(sy2archive);
+            ZipToSrampArchive.closeQuietly(sy2archive);
             SrampArchive.closeQuietly(archive);
         }
 
@@ -310,7 +312,7 @@ public class SrampDevServer extends ErraiDevServer {
             System.out.println("Added SwitchYard app (order-service.jar)");
         } finally {
             IOUtils.closeQuietly(artifactsIS);
-            JarToSrampArchive.closeQuietly(sy2archive);
+            ZipToSrampArchive.closeQuietly(sy2archive);
             SrampArchive.closeQuietly(archive);
         }
 
