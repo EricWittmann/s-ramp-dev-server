@@ -8,8 +8,8 @@
 
   <properties>
     <overlord-commons.version>1.0.6</overlord-commons.version>
-    <s-ramp.version>0.3.0-SNAPSHOT</s-ramp.version>
-    <s-ramp-ui.version>0.3.0-SNAPSHOT</s-ramp-ui.version>
+    <s-ramp.version>0.3.0.Final</s-ramp.version>
+    <s-ramp-ui.version>0.3.0.Final</s-ramp-ui.version>
     <org.jboss.resteasy.version>2.3.5.Final</org.jboss.resteasy.version>
     <org.modeshape.version>3.2.0.Final</org.modeshape.version>
     <slf4j.log4j.version>1.5.11</slf4j.log4j.version>
@@ -21,6 +21,19 @@
   </properties>
 
   <repositories>
+    <repository>
+      <id>jboss-public-repository-group-2</id>
+      <name>JBoss Public Repository Group 2</name>
+      <url>https://repository.jboss.org/nexus/content/repositories/jboss_thirdparty_releases_staging_profile-1019/</url>
+      <layout>default</layout>
+      <releases>
+        <enabled>true</enabled>
+        <updatePolicy>always</updatePolicy>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
     <repository>
       <id>jboss-public-repository-group</id>
       <name>JBoss Public Repository Group</name>
