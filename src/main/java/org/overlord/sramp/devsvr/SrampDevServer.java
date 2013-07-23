@@ -189,7 +189,7 @@ public class SrampDevServer extends ErraiDevServer {
 
         SrampAtomApiClient client = new SrampAtomApiClient("http://localhost:"+serverPort()+"/s-ramp-server");
 
-        String seedType = System.getProperty("s-ramp-dev-server.seed-type", "switchyard");
+        String seedType = System.getProperty("s-ramp-dev-server.seed-type", "none");
         if ("switchyard".equals(seedType)) {
             doSwitchYardSeed(client);
         } else if ("standard".equals(seedType)) {
