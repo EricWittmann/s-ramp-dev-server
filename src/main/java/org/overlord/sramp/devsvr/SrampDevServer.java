@@ -49,6 +49,7 @@ import org.overlord.sramp.common.SrampModelUtils;
 import org.overlord.sramp.integration.switchyard.expand.SwitchYardAppToSrampArchive;
 import org.overlord.sramp.repository.jcr.JCRRepository;
 import org.overlord.sramp.server.atom.services.SRAMPApplication;
+import org.overlord.sramp.server.filters.LocaleFilter;
 import org.overlord.sramp.ui.client.shared.beans.ArtifactSummaryBean;
 import org.overlord.sramp.ui.server.servlets.ArtifactDownloadServlet;
 import org.overlord.sramp.ui.server.servlets.ArtifactUploadServlet;
@@ -143,6 +144,7 @@ public class SrampDevServer extends ErraiDevServer {
         srampUI.addFilter(ResourceCacheControlFilter.class, "/css/*", EnumSet.of(DispatcherType.REQUEST));
         srampUI.addFilter(ResourceCacheControlFilter.class, "/images/*", EnumSet.of(DispatcherType.REQUEST));
         srampUI.addFilter(ResourceCacheControlFilter.class, "/js/*", EnumSet.of(DispatcherType.REQUEST));
+        srampUI.addFilter(org.overlord.sramp.ui.server.filters.LocaleFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         // Servlets
         ServletHolder erraiServlet = new ServletHolder(DefaultBlockingServlet.class);
@@ -173,7 +175,7 @@ public class SrampDevServer extends ErraiDevServer {
         ServletHolder resteasyServlet = new ServletHolder(new HttpServletDispatcher());
         resteasyServlet.setInitParameter("javax.ws.rs.Application", SRAMPApplication.class.getName());
         srampServer.addServlet(resteasyServlet, "/*");
-
+        srampServer.addFilter(LocaleFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         // Add to handlers
         handlers.addHandler(srampUI);
