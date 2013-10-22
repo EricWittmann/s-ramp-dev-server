@@ -89,6 +89,10 @@
           <artifactId>slf4j-log4j12</artifactId>
           <groupId>org.slf4j</groupId>
         </exclusion>
+      	<exclusion>
+      		<artifactId>sisu-guava</artifactId>
+      		<groupId>org.sonatype.sisu</groupId>
+      	</exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -162,6 +166,11 @@
           <groupId>org.slf4j</groupId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava-gwt</artifactId>
+      <version>14.0.1</version>
     </dependency>
 
   </dependencies>
