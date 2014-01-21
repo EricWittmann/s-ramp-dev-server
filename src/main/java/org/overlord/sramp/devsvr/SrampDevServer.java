@@ -16,19 +16,31 @@
 package org.overlord.sramp.devsvr;
 
 import java.io.InputStream;
+import java.security.Principal;
 import java.util.EnumSet;
 
+import javax.security.auth.Subject;
 import javax.servlet.DispatcherType;
 
 import org.apache.commons.io.IOUtils;
+import org.eclipse.jetty.security.ConstraintMapping;
+import org.eclipse.jetty.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.security.Credential;
 import org.jboss.errai.bus.server.servlet.DefaultBlockingServlet;
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher;
 import org.jboss.weld.environment.servlet.BeanManagerResourceBindingListener;
 import org.jboss.weld.environment.servlet.Listener;
 import org.oasis_open.docs.s_ramp.ns.s_ramp_v1.BaseArtifactType;
+import org.overlord.commons.auth.jetty8.HttpRequestThreadLocalFilter;
+import org.overlord.commons.auth.jetty8.Jetty8SamlBearerTokenAuthFilter;
 import org.overlord.commons.dev.server.DevServerEnvironment;
 import org.overlord.commons.dev.server.ErraiDevServer;
 import org.overlord.commons.dev.server.MultiDefaultServlet;
@@ -48,11 +60,14 @@ import org.overlord.sramp.common.ArtifactType;
 import org.overlord.sramp.common.SrampModelUtils;
 import org.overlord.sramp.integration.switchyard.expand.SwitchYardAppToSrampArchive;
 import org.overlord.sramp.repository.jcr.JCRRepository;
+import org.overlord.sramp.repository.jcr.modeshape.filters.ServletCredentialsFilter;
 import org.overlord.sramp.server.atom.services.SRAMPApplication;
 import org.overlord.sramp.server.filters.LocaleFilter;
 import org.overlord.sramp.ui.client.shared.beans.ArtifactSummaryBean;
+import org.overlord.sramp.ui.server.api.SAMLBearerTokenAuthenticationProvider;
 import org.overlord.sramp.ui.server.servlets.ArtifactDownloadServlet;
 import org.overlord.sramp.ui.server.servlets.ArtifactUploadServlet;
+import org.overlord.sramp.ui.server.servlets.OntologyUploadServlet;
 
 /**
  * A dev server for s-ramp.
@@ -94,8 +109,17 @@ public class SrampDevServer extends ErraiDevServer {
         // Use an in-memory config for s-ramp
         System.setProperty("sramp.modeshape.config.url", "classpath://" + JCRRepository.class.getName()
                 + "/META-INF/modeshape-configs/inmemory-sramp-config.json");
-        // No authentication provider - the s-ramp server is not protected
-        System.setProperty("s-ramp-ui.atom-api.authentication.provider", "org.overlord.sramp.ui.server.api.NoAuthenticationProvider");
+        
+        // Authentication provider
+//        System.setProperty("s-ramp-ui.atom-api.authentication.provider", BasicAuthenticationProvider.class.getName());
+//        System.setProperty("s-ramp-ui.atom-api.authentication.basic.user", "ui");
+//        System.setProperty("s-ramp-ui.atom-api.authentication.basic.password", "ui");
+        System.setProperty("s-ramp-ui.atom-api.authentication.provider", SAMLBearerTokenAuthenticationProvider.class.getName());
+        System.setProperty("s-ramp-ui.atom-api.authentication.saml.issuer", "/s-ramp-ui");
+        System.setProperty("s-ramp-ui.atom-api.authentication.saml.service", "/s-ramp-server");
+        System.setProperty("s-ramp-ui.atom-api.authentication.saml.sign-assertions", "false");
+
+        
         // Don't do any resource caching!
         System.setProperty("overlord.resource-caching.disabled", "true");
     }
@@ -132,6 +156,7 @@ public class SrampDevServer extends ErraiDevServer {
          * S-RAMP UI
          * ********* */
         ServletContextHandler srampUI = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        srampUI.setSecurityHandler(createUISecurityHandler());
         srampUI.setContextPath("/s-ramp-ui");
         srampUI.setWelcomeFiles(new String[] { "index.html" });
         srampUI.setResourceBase(environment.getModuleDir("s-ramp-ui").getCanonicalPath());
@@ -140,6 +165,7 @@ public class SrampDevServer extends ErraiDevServer {
         srampUI.setInitParameter("users.properties", "/WEB-INF/users.properties");
         srampUI.addEventListener(new Listener());
         srampUI.addEventListener(new BeanManagerResourceBindingListener());
+        srampUI.addFilter(HttpRequestThreadLocalFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         srampUI.addFilter(GWTCacheControlFilter.class, "/app/*", EnumSet.of(DispatcherType.REQUEST));
         srampUI.addFilter(ResourceCacheControlFilter.class, "/css/*", EnumSet.of(DispatcherType.REQUEST));
         srampUI.addFilter(ResourceCacheControlFilter.class, "/images/*", EnumSet.of(DispatcherType.REQUEST));
@@ -152,6 +178,7 @@ public class SrampDevServer extends ErraiDevServer {
         srampUI.addServlet(erraiServlet, "*.erraiBus");
         srampUI.addServlet(new ServletHolder(ArtifactDownloadServlet.class), "/app/services/artifactDownload");
         srampUI.addServlet(new ServletHolder(ArtifactUploadServlet.class), "/app/services/artifactUpload");
+        srampUI.addServlet(new ServletHolder(OntologyUploadServlet.class), "/app/services/ontologyUpload");
         ServletHolder headerDataServlet = new ServletHolder(OverlordHeaderDataJS.class);
         headerDataServlet.setInitParameter("app-id", "s-ramp-ui");
         srampUI.addServlet(headerDataServlet, "/js/overlord-header-data.js");
@@ -171,15 +198,57 @@ public class SrampDevServer extends ErraiDevServer {
          * S-RAMP server
          * ************* */
         ServletContextHandler srampServer = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        srampServer.setSecurityHandler(createUISecurityHandler());
         srampServer.setContextPath("/s-ramp-server");
         ServletHolder resteasyServlet = new ServletHolder(new HttpServletDispatcher());
         resteasyServlet.setInitParameter("javax.ws.rs.Application", SRAMPApplication.class.getName());
         srampServer.addServlet(resteasyServlet, "/*");
+        srampServer.addFilter(Jetty8SamlBearerTokenAuthFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST))
+                .setInitParameter("allowedIssuers", "/s-ramp-ui,/dtgov,/dtgov-ui");
         srampServer.addFilter(LocaleFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+        srampServer.addFilter(ServletCredentialsFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         // Add to handlers
         handlers.addHandler(srampUI);
         handlers.addHandler(srampServer);
+    }
+
+    /**
+     * @return a security handler
+     */
+    private SecurityHandler createUISecurityHandler() {
+        Constraint constraint = new Constraint();
+        constraint.setName(Constraint.__BASIC_AUTH);
+        constraint.setRoles(new String[]{"overlorduser"});
+        constraint.setAuthenticate(true);
+
+        ConstraintMapping cm = new ConstraintMapping();
+        cm.setConstraint(constraint);
+        cm.setPathSpec("/*");
+
+        ConstraintSecurityHandler csh = new ConstraintSecurityHandler();
+        csh.setAuthenticator(new BasicAuthenticator());
+        csh.setRealmName("overlord");
+        csh.addConstraintMapping(cm);
+        csh.setLoginService(new HashLoginService() {
+            @Override
+            public UserIdentity login(String username, Object credentials) {
+                Credential credential = (credentials instanceof Credential) ? (Credential) credentials
+                        : Credential.getCredential(credentials.toString());
+                Principal userPrincipal = new KnownUser(username, credential);
+                Subject subject = new Subject();
+                subject.getPrincipals().add(userPrincipal);
+                subject.getPrivateCredentials().add(credential);
+                String[] roles = new String[] { "overlorduser", "admin.sramp" };
+                for (String role : roles) {
+                    subject.getPrincipals().add(new RolePrincipal(role));
+                }
+                subject.setReadOnly();
+                return _identityService.newUserIdentity(subject, userPrincipal, roles);
+            }
+        });
+
+        return csh;
     }
 
     /**
@@ -189,7 +258,7 @@ public class SrampDevServer extends ErraiDevServer {
     protected void postStart(DevServerEnvironment environment) throws Exception {
         System.out.println("----------  Seeding the Repository  ---------------");
 
-        SrampAtomApiClient client = new SrampAtomApiClient("http://localhost:"+serverPort()+"/s-ramp-server");
+        SrampAtomApiClient client = new SrampAtomApiClient("http://localhost:"+serverPort()+"/s-ramp-server", "seeder", "seeder", true);
 
         String seedType = System.getProperty("s-ramp-dev-server.seed-type", "none");
         if ("switchyard".equals(seedType)) {
