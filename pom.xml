@@ -8,8 +8,8 @@
 
   <properties>
     <overlord-commons.version>2.0.0-SNAPSHOT</overlord-commons.version>
-    <s-ramp.version>0.4.0-SNAPSHOT</s-ramp.version>
-    <s-ramp-ui.version>0.4.0-SNAPSHOT</s-ramp-ui.version>
+    <s-ramp.version>0.4.1-SNAPSHOT</s-ramp.version>
+    <s-ramp-ui.version>0.4.1-SNAPSHOT</s-ramp-ui.version>
     <org.jboss.resteasy.version>2.3.6.Final</org.jboss.resteasy.version>
     <org.modeshape.version>3.6.0.Final</org.modeshape.version>
     <slf4j.version>1.7.5</slf4j.version>
