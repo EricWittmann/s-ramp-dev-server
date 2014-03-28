@@ -227,6 +227,7 @@ public class SrampDevServer extends ErraiDevServer {
         cm.setPathSpec("/*");
 
         ConstraintSecurityHandler csh = new ConstraintSecurityHandler();
+        csh.setSessionRenewedOnAuthentication(false);
         csh.setAuthenticator(new BasicAuthenticator());
         csh.setRealmName("overlord");
         csh.addConstraintMapping(cm);
